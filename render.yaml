@@ -16,7 +16,7 @@ services:
 
   # ---- Next.js frontend ----
   - type: web
-    name: nerdwallet-frontend
+    name: nerdwallet-money
     runtime: node
     rootDir: frontend
     plan: free
