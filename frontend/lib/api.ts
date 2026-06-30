@@ -1,4 +1,6 @@
-const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+let BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+// Render's `fromService` injects a bare hostname — normalize to a full URL.
+if (BASE && !/^https?:\/\//.test(BASE)) BASE = `https://${BASE}`;
 
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}/api${path}`, {

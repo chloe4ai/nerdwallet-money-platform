@@ -1,0 +1,34 @@
+# Render Blueprint — deploys both services from this repo.
+# In Render: New + → Blueprint → pick chloe4ai/nerdwallet-money-platform → Apply.
+services:
+  # ---- Express + SQLite API ----
+  - type: web
+    name: nerdwallet-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install
+    startCommand: npm run db:init && npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+
+  # ---- Next.js frontend ----
+  - type: web
+    name: nerdwallet-frontend
+    runtime: node
+    rootDir: frontend
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # Points the frontend at the backend service automatically (bare host;
+      # the API client prepends https://).
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: nerdwallet-backend
+          type: web
+          property: host
