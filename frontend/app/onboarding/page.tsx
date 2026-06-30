@@ -24,17 +24,18 @@ export default function Onboarding() {
   const [ans, setAns] = useState<Record<string, string>>({});
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(false);
   const done = QUESTIONS.every((q) => ans[q.key]);
 
   const sample = () => setAns({ credit_band: 'good', goal: 'grow', cash_flow: 'some', debt_type: 'card', horizon: 'long' });
 
   async function submit() {
-    setBusy(true);
+    setBusy(true); setError(false);
     try {
       const plan = await api.createProfile({ name, ...ans } as any);
       setProfileId(plan.profile.id);
       router.push('/plan');
-    } catch (e) { setBusy(false); alert('Could not reach the backend. Is it running on :4000?'); }
+    } catch (e) { setBusy(false); setError(true); }
   }
 
   return (
@@ -71,8 +72,9 @@ export default function Onboarding() {
       </div>
 
       <div className="text-center mt-6">
-        <button className="cta" disabled={!done || busy} onClick={submit}>{busy ? 'Building your plan…' : 'See my money next steps →'}</button>
+        <button className="cta" disabled={!done || busy} onClick={submit}>{busy ? 'Building your plan… (waking the server can take ~30s)' : 'See my money next steps →'}</button>
         <div className="mt-3.5"><button onClick={sample} className="text-muted text-sm underline">Skip — use a sample profile</button></div>
+        {error && <p className="mt-4 text-rednw text-sm">Couldn&apos;t reach the server — it may be waking from sleep. Give it a few seconds and try again.</p>}
       </div>
     </div>
   );

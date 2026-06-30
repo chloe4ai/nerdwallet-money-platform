@@ -1,15 +1,30 @@
 let BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-// Render's `fromService` injects a bare hostname — normalize to a full URL.
-if (BASE && !/^https?:\/\//.test(BASE)) BASE = `https://${BASE}`;
+// Normalize whatever the deploy injected into a usable URL:
+//  - full host (has a dot)      → https://host
+//  - bare Render service name   → https://name.onrender.com
+//    (Render's `fromService.host` returns just the service name)
+if (BASE && !/^https?:\/\//.test(BASE)) {
+  BASE = BASE.includes('.') ? `https://${BASE}` : `https://${BASE}.onrender.com`;
+}
+export const API_BASE = BASE;
 
-async function http<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}/api${path}`, {
-    ...init,
-    headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
-  return res.json() as Promise<T>;
+// Retry rides out free-tier cold starts (backend can sleep and take ~30–50s to wake).
+async function http<T>(path: string, init?: RequestInit, attempt = 0): Promise<T> {
+  try {
+    const res = await fetch(`${BASE}/api${path}`, {
+      ...init,
+      headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
+      cache: 'no-store',
+    });
+    if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+    return res.json() as Promise<T>;
+  } catch (err) {
+    if (attempt < 2) {
+      await new Promise((r) => setTimeout(r, 2500));
+      return http<T>(path, init, attempt + 1);
+    }
+    throw err;
+  }
 }
 
 // ---- types ----
